@@ -69,7 +69,7 @@ const WallpaperGridItem: React.FC<WallpaperGridItemProps> = ({ wallpaper, theme,
           marginBottom: CARD_GAP,
           borderRadius: 12,
           backgroundColor: wallpaper.backgroundColor,
-          padding: 12,
+          padding: 10, // Consistent padding for all cards
           justifyContent: 'center',
           alignItems: 'center',
           shadowColor: theme.colors.text,
@@ -77,6 +77,7 @@ const WallpaperGridItem: React.FC<WallpaperGridItemProps> = ({ wallpaper, theme,
           shadowOpacity: 0.08,
           shadowRadius: 8,
           elevation: 3,
+          overflow: 'hidden', // Prevent any content from overflowing
         }}
       >
         {/* Quote Preview with Position */}
@@ -86,21 +87,26 @@ const WallpaperGridItem: React.FC<WallpaperGridItemProps> = ({ wallpaper, theme,
           top: wallpaper.textPosition ? `${wallpaper.textPosition.y * 100}%` : '50%',
           transform: [
             { translateX: -(width * (wallpaper.textWidth || 0.8)) / 2 },
-            { translateY: -30 }
+            { translateY: -Math.min(height * 0.08, 30) } // Adaptive offset with max limit
           ],
           width: width * (wallpaper.textWidth || 0.8),
+          maxHeight: height * 0.9, // Use most of the available space
           alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
         }}>
           <Text
             style={{
-              fontSize: Math.min(wallpaper.fontSize * 0.6, height > 250 ? 16 : 14),
+              fontSize: Math.min(wallpaper.fontSize * 0.4, Math.max(9, height / 18)),
               fontFamily: wallpaper.fontFamily,
               color: wallpaper.textColor,
-              textAlign: 'center',
-              lineHeight: Math.min(wallpaper.fontSize * 0.6, height > 250 ? 16 : 14) * 1.2,
+              textAlign: wallpaper.textAlign || 'center',
+              lineHeight: Math.min(wallpaper.fontSize * 0.4, Math.max(9, height / 18)) * 1.3,
             }}
-            numberOfLines={height > 250 ? 8 : 6}
+            numberOfLines={Math.max(2, Math.min(Math.floor(height / 20), 12))}
             ellipsizeMode="tail"
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.6}
           >
             "{wallpaper.quote}"
           </Text>
@@ -109,14 +115,17 @@ const WallpaperGridItem: React.FC<WallpaperGridItemProps> = ({ wallpaper, theme,
           {wallpaper.author && (
             <Text
               style={{
-                fontSize: Math.min(wallpaper.fontSize * 0.45, height > 250 ? 12 : 10),
+                fontSize: Math.min(wallpaper.fontSize * 0.25, Math.max(7, height / 35)),
                 fontFamily: 'Montserrat_400Regular',
                 color: wallpaper.textColor,
                 opacity: 0.8,
-                textAlign: 'center',
-                marginTop: height > 200 ? 8 : 4,
+                textAlign: wallpaper.textAlign || 'center',
+                marginTop: Math.max(3, height / 50),
               }}
               numberOfLines={1}
+              ellipsizeMode="tail"
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.7}
             >
               — {wallpaper.author}
             </Text>
@@ -209,52 +218,22 @@ export default function MyZoneScreen() {
     }
   }, []);
 
-  // Calculate card dimensions based on aspect ratio and content (Pinterest-style)
+  // Calculate card dimensions maintaining TRUE aspect ratios (Pinterest-style)
   const getCardDimensions = (wallpaper: SavedWallpaper) => {
     const aspectRatio = wallpaper.aspectRatio || '9:16';
     const [widthRatio, heightRatio] = aspectRatio.split(':').map(Number);
-    const ratio = heightRatio / widthRatio;
     
     const width = COLUMN_WIDTH;
-    let height = width * ratio;
+    // Calculate height to maintain EXACT aspect ratio
+    const height = width * (heightRatio / widthRatio);
     
-    // Adjust height based on content length for more Pinterest-like variety
-    const quoteLength = wallpaper.quote.length;
-    const contentFactor = quoteLength > 100 ? 1.1 : quoteLength > 50 ? 1.0 : 0.9;
-    height = height * contentFactor;
+    // Apply reasonable bounds only to prevent extreme cases, but maintain ratios
+    const minHeight = 100;
+    const maxHeight = 500; // Allow tall cards for authentic Pinterest look
     
-    // Optimize for Pinterest-style grid based on mobile aspect ratios
-    switch (aspectRatio) {
-      case '9:16': // Instagram Story - tall but manageable
-        height *= 0.85;
-        break;
-      case '1:1': // Instagram Post - perfect square
-        height *= 1.0;
-        break;
-      case '4:5': // Instagram Portrait - slightly taller
-        height *= 1.1;
-        break;
-      case '2:3': // Pinterest Pin - tall and narrow (perfect for Pinterest grid)
-        height *= 1.2;
-        break;
-      case '9:19.5': // Mobile Wallpaper - very tall, scale down significantly
-        height *= 0.7;
-        break;
-      case '16:9': // Twitter Post - wide format, needs more height in vertical grid
-        height *= 1.3;
-        break;
-      default:
-        // Fallback for any other ratios
-        if (ratio > 2) height *= 0.8; // Very tall
-        else if (ratio > 1.5) height *= 0.9; // Portrait
-        else if (ratio < 0.6) height *= 1.4; // Very wide
-        else if (ratio < 0.8) height *= 1.2; // Landscape
-    }
+    const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, height));
     
-    // Ensure minimum and maximum bounds for readability
-    height = Math.max(160, Math.min(380, height));
-    
-    return { width, height };
+    return { width, height: constrainedHeight };
   };
 
   // Create Pinterest-style masonry columns
@@ -379,76 +358,74 @@ export default function MyZoneScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <View style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          alignItems: 'center',
-        }}>
-          <Text style={{
-            fontSize: 28,
-            fontFamily: 'Montserrat_600SemiBold',
-            color: theme.colors.text,
-            textAlign: 'center',
+      {wallpapers.length === 0 ? (
+        renderEmpty()
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.accent}
+              colors={[theme.colors.accent]}
+            />
+          }
+          contentContainerStyle={{
+            paddingBottom: 100, // Space for bottom navigation
+          }}
+        >
+          {/* Scrollable Header */}
+          <View style={{
+            paddingHorizontal: 20,
+            paddingVertical: 20,
+            alignItems: 'center',
           }}>
-            My Zone
-          </Text>
-          <Text style={{
-            fontSize: 16,
-            fontFamily: 'Montserrat_400Regular',
-            color: theme.colors.textMuted,
-            textAlign: 'center',
-            marginTop: 4,
-          }}>
-            {wallpapers.length} saved wallpaper{wallpapers.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-
-        {/* Pinterest-style Grid */}
-        {wallpapers.length === 0 ? (
-          renderEmpty()
-        ) : (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={theme.colors.accent}
-                colors={[theme.colors.accent]}
-              />
-            }
-            contentContainerStyle={{
-              paddingTop: 8,
-              paddingBottom: 100, // Space for bottom navigation
-            }}
-          >
-            <View style={{
-              flexDirection: 'row',
-              paddingHorizontal: 15,
-              gap: COLUMN_GAP,
+            <Text style={{
+              fontSize: 32,
+              fontFamily: 'Montserrat_700Bold',
+              color: theme.colors.text,
+              textAlign: 'center',
             }}>
-              {(() => {
-                const { leftColumn, rightColumn } = createMasonryColumns(wallpapers);
-                return (
-                  <>
-                    {/* Left Column */}
-                    <View style={{ flex: 1 }}>
-                      {leftColumn.map(renderWallpaper)}
-                    </View>
-                    
-                    {/* Right Column */}
-                    <View style={{ flex: 1 }}>
-                      {rightColumn.map(renderWallpaper)}
-                    </View>
-                  </>
-                );
-              })()}
-            </View>
-          </ScrollView>
-        )}
-      </View>
+              My Zone
+            </Text>
+            <Text style={{
+              fontSize: 16,
+              fontFamily: 'Montserrat_400Regular',
+              color: theme.colors.textMuted,
+              textAlign: 'center',
+              marginTop: 6,
+              opacity: 0.8,
+            }}>
+              {wallpapers.length} saved wallpaper{wallpapers.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+
+          {/* Pinterest-style Grid */}
+          <View style={{
+            flexDirection: 'row',
+            paddingHorizontal: 15,
+            gap: COLUMN_GAP,
+          }}>
+            {(() => {
+              const { leftColumn, rightColumn } = createMasonryColumns(wallpapers);
+              return (
+                <>
+                  {/* Left Column */}
+                  <View style={{ flex: 1 }}>
+                    {leftColumn.map(renderWallpaper)}
+                  </View>
+                  
+                  {/* Right Column */}
+                  <View style={{ flex: 1 }}>
+                    {rightColumn.map(renderWallpaper)}
+                  </View>
+                </>
+              );
+            })()}
+          </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 } 

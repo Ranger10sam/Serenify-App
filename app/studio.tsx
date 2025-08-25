@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Dimensions, Alert, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Dimensions, Alert, ScrollView, Modal, StyleSheet } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import { BlurView } from 'expo-blur';
 
 import { createTheme } from '../src/theme';
 import { getJSON, getWallpaperById, saveWallpaper, updateWallpaper } from '../src/lib/storage';
@@ -29,9 +30,22 @@ const textColors = [
 
 const fontSizes = [16, 18, 20, 22, 24, 26, 28];
 const fontFamilies = [
-  { name: 'Regular', value: 'Montserrat_400Regular' },
-  { name: 'Medium', value: 'Montserrat_500Medium' },
-  { name: 'SemiBold', value: 'Montserrat_600SemiBold' },
+  { name: 'Montserrat', value: 'Montserrat' },
+  { name: 'System', value: 'System' },
+];
+
+const fontWeights = [
+  { name: 'Light', value: '300', family: 'Montserrat_300Light' },
+  { name: 'Regular', value: '400', family: 'Montserrat_400Regular' },
+  { name: 'Medium', value: '500', family: 'Montserrat_500Medium' },
+  { name: 'SemiBold', value: '600', family: 'Montserrat_600SemiBold' },
+  { name: 'Bold', value: '700', family: 'Montserrat_700Bold' },
+];
+
+const textAlignments = [
+  { name: 'Left', value: 'left' as const, icon: 'text-left' },
+  { name: 'Center', value: 'center' as const, icon: 'text-center' },
+  { name: 'Right', value: 'right' as const, icon: 'text-right' },
 ];
 
 const aspectRatios = [
@@ -39,8 +53,7 @@ const aspectRatios = [
   { name: 'Instagram Post', value: '1:1', width: 1, height: 1 },
   { name: 'Instagram Portrait', value: '4:5', width: 4, height: 5 },
   { name: 'Pinterest Pin', value: '2:3', width: 2, height: 3 },
-  { name: 'Mobile Wallpaper', value: '9:19.5', width: 9, height: 19.5 },
-  { name: 'Twitter Post', value: '16:9', width: 16, height: 9 },
+  { name: 'Photo Portrait', value: '3:4', width: 3, height: 4 },
 ];
 
 export default function StudioScreen() {
@@ -55,6 +68,8 @@ export default function StudioScreen() {
   const [textColor, setTextColor] = useState(textColors[0]);
   const [fontSize, setFontSize] = useState(20);
   const [fontFamily, setFontFamily] = useState('Montserrat_400Regular');
+  const [fontWeight, setFontWeight] = useState('400');
+  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('center');
   const [aspectRatio, setAspectRatio] = useState(aspectRatios[0]); // Default to 9:16
   const [textPosition, setTextPosition] = useState({ x: 0.5, y: 0.5 });
   const [textWidth, setTextWidth] = useState(0.8);
@@ -68,15 +83,16 @@ export default function StudioScreen() {
     format: false,
     typography: false,
     layout: false,
-    style: false,
     colors: false,
   });
+  
+
 
   const viewShotRef = useRef<ViewShot>(null);
 
   // Calculate canvas dimensions based on aspect ratio
   const maxCanvasWidth = SCREEN_WIDTH - 40;
-  const maxCanvasHeight = SCREEN_HEIGHT * 0.65; // Leave space for toolbar
+  const maxCanvasHeight = SCREEN_HEIGHT * 0.6; // Leave more space for toolbar
 
   let canvasWidth, canvasHeight;
   const ratio = aspectRatio.width / aspectRatio.height;
@@ -108,6 +124,8 @@ export default function StudioScreen() {
               setTextColor(wallpaper.textColor);
               setFontSize(wallpaper.fontSize);
               setFontFamily(wallpaper.fontFamily);
+              setTextAlign(wallpaper.textAlign || 'center');
+              setFontWeight(wallpaper.fontWeight || '400');
               
               // Find matching aspect ratio
               const matchingRatio = aspectRatios.find(ar => ar.value === wallpaper.aspectRatio);
@@ -143,15 +161,7 @@ export default function StudioScreen() {
   );
 
   // Position slider handlers
-  const handlePositionXChange = (value: number) => {
-    const newX = Math.max(0.1, Math.min(0.9, value));
-    setTextPosition(prev => ({ ...prev, x: newX }));
-  };
 
-  const handlePositionYChange = (value: number) => {
-    const newY = Math.max(0.1, Math.min(0.9, value));
-    setTextPosition(prev => ({ ...prev, y: newY }));
-  };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -180,12 +190,14 @@ export default function StudioScreen() {
         backgroundColor,
         textColor,
         fontSize,
-        fontFamily,
+        fontFamily: fontWeights.find(w => w.value === fontWeight)?.family || fontFamily,
         textPosition: {
           x: textPosition.x,
           y: textPosition.y,
         },
         textWidth,
+        textAlign,
+        fontWeight,
         aspectRatio: aspectRatio.value,
       };
 
@@ -268,17 +280,11 @@ export default function StudioScreen() {
           { name: 'High Quality', width: 1200, height: 1800 },
           { name: 'Ultra HD', width: 1600, height: 2400 },
         ];
-      case '9:19.5': // Mobile Wallpaper
+      case '3:4': // Photo Portrait
         return [
-          { name: 'iPhone 14/15', width: 1179, height: 2556 },
-          { name: 'Samsung S24', width: 1440, height: 3120 },
-          { name: 'Ultra HD', width: 1620, height: 3510 },
-        ];
-      case '16:9': // Twitter Post
-        return [
-          { name: 'Twitter Post', width: 1200, height: 675 },
-          { name: 'High Quality', width: 1600, height: 900 },
-          { name: 'Ultra HD', width: 1920, height: 1080 },
+          { name: 'Photo Portrait', width: 1536, height: 2048 },
+          { name: 'High Quality', width: 2304, height: 3072 },
+          { name: 'Ultra HD', width: 3072, height: 4096 },
         ];
       default:
         return [
@@ -317,6 +323,8 @@ export default function StudioScreen() {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 20,
+          maxWidth: SCREEN_WIDTH,
+          overflow: 'hidden',
           paddingTop: 20,
         }}>
           <ViewShot
@@ -335,18 +343,18 @@ export default function StudioScreen() {
               elevation: 8,
             }}
           >
-            {/* Text Container */}
-            <View
-              style={{
-                position: 'absolute',
-                left: textPosition.x * canvasWidth - textContainerWidth / 2,
-                top: textPosition.y * canvasHeight - textContainerHeight / 2,
-                width: textContainerWidth,
-                height: textContainerHeight,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+                      {/* Text Container */}
+          <View
+            style={{
+              position: 'absolute',
+              left: Math.max(0, Math.min(canvasWidth - textContainerWidth, textPosition.x * canvasWidth - textContainerWidth / 2)),
+              top: Math.max(0, Math.min(canvasHeight - textContainerHeight, textPosition.y * canvasHeight - textContainerHeight / 2)),
+              width: textContainerWidth,
+              height: textContainerHeight,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
               <View style={{
                 width: '100%',
                 alignItems: 'center',
@@ -355,9 +363,9 @@ export default function StudioScreen() {
                 <Text
                   style={{
                     fontSize,
-                    fontFamily,
+                    fontFamily: fontWeights.find(w => w.value === fontWeight)?.family || fontFamily,
                     color: textColor,
-                    textAlign: 'center',
+                    textAlign: textAlign,
                     lineHeight: fontSize * 1.4,
                     width: '100%',
                   }}
@@ -375,7 +383,7 @@ export default function StudioScreen() {
                       fontFamily: 'Montserrat_400Regular',
                       color: textColor,
                       opacity: 0.8,
-                      textAlign: 'center',
+                      textAlign: textAlign,
                       marginTop: 8,
                       width: '100%',
                     }}
@@ -399,10 +407,10 @@ export default function StudioScreen() {
           </Text>
         </View>
 
-        {/* Compact Toolbar */}
+        {/* Compact Toolbar with Blur Background */}
         <MotiView
           animate={{
-            height: toolbarExpanded ? 500 : 60,
+            height: toolbarExpanded ? 420 : 60,
           }}
           transition={{
             type: 'spring',
@@ -410,18 +418,35 @@ export default function StudioScreen() {
             stiffness: 150,
           }}
           style={{
-            backgroundColor: theme.colors.surface,
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
-            paddingHorizontal: 16,
-            paddingTop: 12,
+            overflow: 'hidden',
             shadowColor: theme.colors.text,
             shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 8,
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 10,
           }}
         >
+          <BlurView
+            intensity={80}
+            tint={theme.colors.background === '#000000' ? 'dark' : 'light'}
+            style={{
+              flex: 1,
+            }}
+          >
+            {/* Subtle background overlay for better contrast */}
+            <View style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: theme.colors.surface,
+              opacity: 0.85,
+            }} />
+            
+            <View style={{
+              flex: 1,
+              paddingHorizontal: 16,
+              paddingTop: 12,
+            }}>
           {/* Compact Toolbar Handle */}
           <TouchableOpacity
             onPress={() => setToolbarExpanded(!toolbarExpanded)}
@@ -511,12 +536,11 @@ export default function StudioScreen() {
               from={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ type: 'timing', duration: 300 }}
-              style={{ maxHeight: 400 }}
+              style={{ maxHeight: 320 }}
             >
               <ScrollView 
                 showsVerticalScrollIndicator={false}
-                style={{ flex: 1 }}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{ paddingBottom: 16 }}
               >
                 {/* Content Section */}
                 <View style={{ 
@@ -549,12 +573,7 @@ export default function StudioScreen() {
                   </TouchableOpacity>
                   
                   {expandedSections.content && (
-                    <MotiView
-                      from={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ type: 'timing', duration: 200 }}
-                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
-                    >
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
                       <TextInput
                         value={quote}
                         onChangeText={setQuote}
@@ -586,7 +605,7 @@ export default function StudioScreen() {
                           color: theme.colors.text,
                         }}
                       />
-                    </MotiView>
+                    </View>
                   )}
                 </View>
 
@@ -630,12 +649,7 @@ export default function StudioScreen() {
                   </TouchableOpacity>
                   
                   {expandedSections.format && (
-                    <MotiView
-                      from={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ type: 'timing', duration: 200 }}
-                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
-                    >
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
                       <View style={{ gap: 8 }}>
                         {aspectRatios.map((ratio) => (
                           <TouchableOpacity
@@ -666,13 +680,13 @@ export default function StudioScreen() {
                               {ratio.value}
                             </Text>
                           </TouchableOpacity>
-                        ))}
-                      </View>
-                    </MotiView>
+                                                  ))}
+                        </View>
+                    </View>
                   )}
                 </View>
 
-                {/* Typography Section */}
+                {/* Typography & Style Section */}
                 <View style={{ 
                   backgroundColor: theme.colors.background,
                   borderRadius: 12,
@@ -693,7 +707,7 @@ export default function StudioScreen() {
                       fontFamily: 'Montserrat_600SemiBold',
                       color: theme.colors.text,
                     }}>
-                      Typography
+                      Typography & Style
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={{
@@ -701,7 +715,7 @@ export default function StudioScreen() {
                         fontFamily: 'Montserrat_400Regular',
                         color: theme.colors.textMuted,
                       }}>
-                        Size {fontSize}
+                        {fontSize}px • {fontWeights.find(w => w.value === fontWeight)?.name}
                       </Text>
                       <Ionicons 
                         name={expandedSections.typography ? "chevron-up" : "chevron-down"} 
@@ -712,46 +726,118 @@ export default function StudioScreen() {
                   </TouchableOpacity>
                   
                   {expandedSections.typography && (
-                    <MotiView
-                      from={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ type: 'timing', duration: 200 }}
-                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
-                    >
-                      <View style={{ gap: 8 }}>
-                        {/* Font Size Options */}
-                        {[16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
-                          <TouchableOpacity
-                            key={size}
-                            onPress={() => setFontSize(size)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              paddingVertical: 10,
-                              paddingHorizontal: 12,
-                              borderRadius: 8,
-                              backgroundColor: fontSize === size ? theme.colors.accent : theme.colors.surface,
-                            }}
-                          >
-                            <Text style={{
-                              fontSize: 13,
-                              fontFamily: 'Montserrat_500Medium',
-                              color: fontSize === size ? 'white' : theme.colors.text,
-                            }}>
-                              Size {size}
-                            </Text>
-                            <Text style={{
-                              fontSize: size > 20 ? 16 : size,
-                              fontFamily: 'Montserrat_400Regular',
-                              color: fontSize === size ? 'white' : theme.colors.textMuted,
-                            }}>
-                              Aa
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                      {/* Font Weight Row */}
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={{
+                          fontSize: 12,
+                          fontFamily: 'Montserrat_500Medium',
+                          color: theme.colors.textMuted,
+                          marginBottom: 8,
+                        }}>
+                          Font Weight
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          {fontWeights.map((weight) => (
+                            <TouchableOpacity
+                              key={weight.value}
+                              onPress={() => {
+                                setFontWeight(weight.value);
+                                setFontFamily(weight.family);
+                              }}
+                              style={{
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                backgroundColor: fontWeight === weight.value ? theme.colors.accent : theme.colors.surface,
+                                borderRadius: 6,
+                                minWidth: 60,
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Text style={{
+                                fontSize: 11,
+                                fontFamily: weight.family,
+                                color: fontWeight === weight.value ? 'white' : theme.colors.text,
+                              }}>
+                                {weight.name}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
                       </View>
-                    </MotiView>
+
+                      {/* Font Size & Text Alignment Row */}
+                      <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
+                        {/* Font Size */}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{
+                            fontSize: 12,
+                            fontFamily: 'Montserrat_500Medium',
+                            color: theme.colors.textMuted,
+                            marginBottom: 8,
+                          }}>
+                            Size
+                          </Text>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                            {fontSizes.map((size) => (
+                              <TouchableOpacity
+                                key={size}
+                                onPress={() => setFontSize(size)}
+                                style={{
+                                  paddingVertical: 6,
+                                  paddingHorizontal: 8,
+                                  backgroundColor: fontSize === size ? theme.colors.accent : theme.colors.surface,
+                                  borderRadius: 6,
+                                  minWidth: 35,
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <Text style={{
+                                  fontSize: 10,
+                                  fontFamily: 'Montserrat_500Medium',
+                                  color: fontSize === size ? 'white' : theme.colors.text,
+                                }}>
+                                  {size}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
+
+                        {/* Text Alignment */}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{
+                            fontSize: 12,
+                            fontFamily: 'Montserrat_500Medium',
+                            color: theme.colors.textMuted,
+                            marginBottom: 8,
+                          }}>
+                            Alignment
+                          </Text>
+                          <View style={{ flexDirection: 'row', gap: 4 }}>
+                            {textAlignments.map((align) => (
+                              <TouchableOpacity
+                                key={align.value}
+                                onPress={() => setTextAlign(align.value)}
+                                style={{
+                                  flex: 1,
+                                  paddingVertical: 8,
+                                  backgroundColor: textAlign === align.value ? theme.colors.accent : theme.colors.surface,
+                                  borderRadius: 6,
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <Ionicons
+                                  name={align.icon as any}
+                                  size={14}
+                                  color={textAlign === align.value ? 'white' : theme.colors.text}
+                                />
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
+                      </View>
+                    </View>
                   )}
                 </View>
 
@@ -786,136 +872,112 @@ export default function StudioScreen() {
                   </TouchableOpacity>
                   
                   {expandedSections.layout && (
-                    <MotiView
-                      from={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ type: 'timing', duration: 200 }}
-                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
-                    >
-                      <View style={{ gap: 8 }}>
-                        {/* Text Width Options */}
-                        {[
-                          { label: 'Narrow', value: 0.6 },
-                          { label: 'Medium', value: 0.8 },
-                          { label: 'Wide', value: 1.0 },
-                        ].map((option) => (
-                      <TouchableOpacity
-                        key={option.value}
-                        onPress={() => setTextWidth(option.value)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingVertical: 10,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          backgroundColor: Math.abs(textWidth - option.value) < 0.1 ? theme.colors.accent : theme.colors.surface,
-                        }}
-                      >
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                      {/* Text Width - Horizontal Pills */}
+                      <View style={{ marginBottom: 16 }}>
                         <Text style={{
-                          fontSize: 13,
+                          fontSize: 12,
                           fontFamily: 'Montserrat_500Medium',
-                          color: Math.abs(textWidth - option.value) < 0.1 ? 'white' : theme.colors.text,
+                          color: theme.colors.textMuted,
+                          marginBottom: 8,
                         }}>
-                          {option.label} Text
+                          Text Width
                         </Text>
-                        <Text style={{
-                          fontSize: 11,
-                          fontFamily: 'Montserrat_400Regular',
-                          color: Math.abs(textWidth - option.value) < 0.1 ? 'rgba(255,255,255,0.8)' : theme.colors.textMuted,
-                        }}>
-                          {Math.round(option.value * 100)}%
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                    
-                    {/* Position Presets */}
-                    {[
-                      { label: 'Top Center', x: 0.5, y: 0.25 },
-                      { label: 'Center', x: 0.5, y: 0.5 },
-                      { label: 'Bottom Center', x: 0.5, y: 0.75 },
-                      { label: 'Top Left', x: 0.25, y: 0.25 },
-                      { label: 'Top Right', x: 0.75, y: 0.25 },
-                      { label: 'Bottom Left', x: 0.25, y: 0.75 },
-                      { label: 'Bottom Right', x: 0.75, y: 0.75 },
-                    ].map((preset) => (
-                      <TouchableOpacity
-                        key={preset.label}
-                        onPress={() => setTextPosition({ x: preset.x, y: preset.y })}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingVertical: 10,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          backgroundColor: (Math.abs(textPosition.x - preset.x) < 0.1 && Math.abs(textPosition.y - preset.y) < 0.1) ? theme.colors.accent : theme.colors.surface,
-                        }}
-                      >
-                        <Text style={{
-                          fontSize: 13,
-                          fontFamily: 'Montserrat_500Medium',
-                          color: (Math.abs(textPosition.x - preset.x) < 0.1 && Math.abs(textPosition.y - preset.y) < 0.1) ? 'white' : theme.colors.text,
-                        }}>
-                          {preset.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          {[
+                            { label: 'Narrow', value: 0.6, icon: 'contract-outline' },
+                            { label: 'Medium', value: 0.8, icon: 'resize-outline' },
+                            { label: 'Wide', value: 1.0, icon: 'expand-outline' },
+                          ].map((option) => (
+                            <TouchableOpacity
+                              key={option.value}
+                              onPress={() => setTextWidth(option.value)}
+                              style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                backgroundColor: Math.abs(textWidth - option.value) < 0.1 ? theme.colors.accent : theme.colors.surface,
+                                gap: 6,
+                              }}
+                            >
+                              <Ionicons 
+                                name={option.icon as any} 
+                                size={14} 
+                                color={Math.abs(textWidth - option.value) < 0.1 ? 'white' : theme.colors.textMuted} 
+                              />
+                              <Text style={{
+                                fontSize: 12,
+                                fontFamily: 'Montserrat_500Medium',
+                                color: Math.abs(textWidth - option.value) < 0.1 ? 'white' : theme.colors.text,
+                              }}>
+                                {option.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
                       </View>
-                    </MotiView>
-                  )}
-                </View>
 
-                {/* Style Section */}
-                <View style={{ 
-                  backgroundColor: theme.colors.background,
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
-                }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontFamily: 'Montserrat_600SemiBold',
-                    color: theme.colors.text,
-                    marginBottom: 12,
-                  }}>
-                    Style
-                  </Text>
-                  
-                  <View style={{ gap: 8 }}>
-                    {/* Font Family Options */}
-                    {fontFamilies.map((font) => (
-                      <TouchableOpacity
-                        key={font.value}
-                        onPress={() => setFontFamily(font.value)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingVertical: 12,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          backgroundColor: fontFamily === font.value ? theme.colors.accent : theme.colors.surface,
-                        }}
-                      >
+                      {/* Position Grid */}
+                      <View>
                         <Text style={{
-                          fontSize: 13,
+                          fontSize: 12,
                           fontFamily: 'Montserrat_500Medium',
-                          color: fontFamily === font.value ? 'white' : theme.colors.text,
+                          color: theme.colors.textMuted,
+                          marginBottom: 8,
                         }}>
-                          {font.name}
+                          Position
                         </Text>
-                        <Text style={{
-                          fontSize: 16,
-                          fontFamily: font.value,
-                          color: fontFamily === font.value ? 'white' : theme.colors.textMuted,
+                        <View style={{ 
+                          backgroundColor: theme.colors.surface,
+                          borderRadius: 12,
+                          padding: 12,
+                          aspectRatio: 1,
                         }}>
-                          Aa
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          {/* 3x3 Position Grid */}
+                          <View style={{ flex: 1, gap: 4 }}>
+                            {[
+                              [{ x: 0.2, y: 0.2 }, { x: 0.5, y: 0.2 }, { x: 0.8, y: 0.2 }],
+                              [{ x: 0.2, y: 0.5 }, { x: 0.5, y: 0.5 }, { x: 0.8, y: 0.5 }],
+                              [{ x: 0.2, y: 0.8 }, { x: 0.5, y: 0.8 }, { x: 0.8, y: 0.8 }],
+                            ].map((row, rowIndex) => (
+                              <View key={rowIndex} style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+                                {row.map((pos, colIndex) => {
+                                  const isActive = Math.abs(textPosition.x - pos.x) < 0.15 && Math.abs(textPosition.y - pos.y) < 0.15;
+                                  return (
+                                    <TouchableOpacity
+                                      key={`${rowIndex}-${colIndex}`}
+                                      onPress={() => setTextPosition(pos)}
+                                      style={{
+                                        flex: 1,
+                                        borderRadius: 6,
+                                        backgroundColor: isActive ? theme.colors.accent : theme.colors.background,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <View style={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: 4,
+                                        backgroundColor: isActive ? 'white' : theme.colors.textMuted,
+                                      }} />
+                                    </TouchableOpacity>
+                                  );
+                                })}
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+
+                                              </View>
+                      </View>
+                    )}
                   </View>
-                </View>
+
+
 
                 {/* Colors Section */}
                 <View style={{ 
@@ -994,6 +1056,8 @@ export default function StudioScreen() {
               </ScrollView>
             </MotiView>
           )}
+            </View>
+          </BlurView>
         </MotiView>
 
         {/* Export Modal */}

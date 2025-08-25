@@ -9,6 +9,226 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-
 import { BlurView } from 'expo-blur';
 import { createTheme, ThemeMode } from '../src/theme';
 import { getJSON } from '../src/lib/storage';
+import { Ionicons } from '@expo/vector-icons';
+
+// Custom Toast Configuration
+const toastConfig = {
+  success: (props: any) => (
+    <View style={{
+      height: 60,
+      width: '90%',
+      backgroundColor: '#D1FAE5',
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginHorizontal: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+      borderLeftWidth: 4,
+      borderLeftColor: '#10B981',
+    }}>
+      <View style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+      }}>
+        <Ionicons name="checkmark" size={14} color="white" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{
+          fontSize: 14,
+          fontFamily: 'Montserrat_600SemiBold',
+          color: '#065F46',
+          marginBottom: 2,
+        }}>
+          {props.text1}
+        </Text>
+        {props.text2 && (
+          <Text style={{
+            fontSize: 12,
+            fontFamily: 'Montserrat_400Regular',
+            color: '#047857',
+          }}>
+            {props.text2}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity onPress={() => Toast.hide()}>
+        <Ionicons name="close" size={18} color="#059669" />
+      </TouchableOpacity>
+    </View>
+  ),
+  
+  info: (props: any) => (
+    <View style={{
+      height: 60,
+      width: '90%',
+      backgroundColor: '#DBEAFE',
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginHorizontal: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+      borderLeftWidth: 4,
+      borderLeftColor: '#3B82F6',
+    }}>
+      <View style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#3B82F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+      }}>
+        <Ionicons name="information" size={14} color="white" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{
+          fontSize: 14,
+          fontFamily: 'Montserrat_600SemiBold',
+          color: '#1E3A8A',
+          marginBottom: 2,
+        }}>
+          {props.text1}
+        </Text>
+        {props.text2 && (
+          <Text style={{
+            fontSize: 12,
+            fontFamily: 'Montserrat_400Regular',
+            color: '#1D4ED8',
+          }}>
+            {props.text2}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity onPress={() => Toast.hide()}>
+        <Ionicons name="close" size={18} color="#2563EB" />
+      </TouchableOpacity>
+    </View>
+  ),
+  
+  warning: (props: any) => (
+    <View style={{
+      height: 60,
+      width: '90%',
+      backgroundColor: '#FEF3C7',
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginHorizontal: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+      borderLeftWidth: 4,
+      borderLeftColor: '#F59E0B',
+    }}>
+      <View style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#F59E0B',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+      }}>
+        <Ionicons name="warning" size={14} color="white" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{
+          fontSize: 14,
+          fontFamily: 'Montserrat_600SemiBold',
+          color: '#92400E',
+          marginBottom: 2,
+        }}>
+          {props.text1}
+        </Text>
+        {props.text2 && (
+          <Text style={{
+            fontSize: 12,
+            fontFamily: 'Montserrat_400Regular',
+            color: '#B45309',
+          }}>
+            {props.text2}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity onPress={() => Toast.hide()}>
+        <Ionicons name="close" size={18} color="#D97706" />
+      </TouchableOpacity>
+    </View>
+  ),
+  
+  error: (props: any) => (
+    <View style={{
+      height: 60,
+      width: '90%',
+      backgroundColor: '#FEE2E2',
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginHorizontal: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+      borderLeftWidth: 4,
+      borderLeftColor: '#EF4444',
+    }}>
+      <View style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#EF4444',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+      }}>
+        <Ionicons name="close" size={14} color="white" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{
+          fontSize: 14,
+          fontFamily: 'Montserrat_600SemiBold',
+          color: '#991B1B',
+          marginBottom: 2,
+        }}>
+          {props.text1}
+        </Text>
+        {props.text2 && (
+          <Text style={{
+            fontSize: 12,
+            fontFamily: 'Montserrat_400Regular',
+            color: '#B91C1C',
+          }}>
+            {props.text2}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity onPress={() => Toast.hide()}>
+        <Ionicons name="close" size={18} color="#DC2626" />
+      </TouchableOpacity>
+    </View>
+  ),
+};
 
 function TopNav({ theme }: { theme: any }) {
 	const insets = useSafeAreaInsets();
@@ -129,7 +349,7 @@ export default function RootLayout() {
 		<SafeAreaProvider>
 			<SafeAreaView style={{ flex: 1 }}>
 				<RootLayoutContent />
-				<Toast />
+				<Toast config={toastConfig} />
 			</SafeAreaView>
 		</SafeAreaProvider>
 	);

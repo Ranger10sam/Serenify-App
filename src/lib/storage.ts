@@ -29,6 +29,8 @@ export interface SavedWallpaper {
   fontFamily: string;
   textPosition: { x: number; y: number };
   textWidth: number;
+  textAlign?: 'left' | 'center' | 'right';
+  fontWeight?: string;
   aspectRatio: string;
   createdAt: number;
   updatedAt: number;
