@@ -1,66 +1,161 @@
-import React, { ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { ReactNode } from 'react';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 
 interface GlassCardProps {
   children: ReactNode;
-  style?: any;
+  theme: any;
+  style?: ViewStyle;
+  intensity?: number;
+  variant?: 'soft' | 'medium' | 'strong';
   animated?: boolean;
 }
 
-export function GlassCard({ children, style, animated = true }: GlassCardProps) {
-  const CardWrapper = animated ? MotiView : View;
-  const animationProps = animated
-    ? {
-        from: { opacity: 0, scale: 0.9, translateY: 30 },
-        animate: { opacity: 1, scale: 1, translateY: 0 },
-        transition: { type: 'spring' as const, damping: 18, stiffness: 150 },
-      }
-    : {};
+export function GlassCard({ 
+  children, 
+  theme, 
+  style, 
+  intensity = 30,
+  variant = 'soft',
+  animated = true 
+}: GlassCardProps) {
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'medium':
+        return {
+          backgroundColor: theme.colors.glassBg,
+          borderWidth: 1,
+          borderColor: theme.colors.glassStroke,
+        };
+      case 'strong':
+        return {
+          backgroundColor: theme.colors.accent + '40',
+          borderWidth: 1.5,
+          borderColor: theme.colors.glassStroke,
+        };
+      default:
+        return {
+          backgroundColor: theme.colors.glassBg,
+          borderWidth: 0.5,
+          borderColor: theme.colors.glassStroke,
+        };
+    }
+  };
+
+  const CardContent = (
+    <View style={[styles.container, getVariantStyles(), style]}>
+      <BlurView 
+        intensity={intensity} 
+        tint="light"
+        style={styles.blur}
+      >
+        <LinearGradient
+          colors={[
+            theme.colors.glassBg,
+            theme.colors.glassBg + '80',
+            theme.colors.glassBg + '60',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradient}
+        >
+          <View style={styles.content}>
+            {children}
+          </View>
+        </LinearGradient>
+      </BlurView>
+    </View>
+  );
+
+  if (animated) {
+    return (
+      <MotiView
+        from={{ opacity: 0, scale: 0.95, translateY: 10 }}
+        animate={{ opacity: 1, scale: 1, translateY: 0 }}
+        transition={{
+          type: 'timing',
+          duration: 600,
+          delay: 100,
+        }}
+      >
+        {CardContent}
+      </MotiView>
+    );
+  }
+
+  return CardContent;
+}
+
+// Abstract floating shapes for background decoration
+export function AbstractShape({ theme, variant = 'circle' }: { theme: any; variant?: 'circle' | 'square' | 'blob' }) {
+  const getShapeStyle = () => {
+    const baseStyle = {
+      position: 'absolute' as const,
+      backgroundColor: theme.colors.accent + '20',
+      borderWidth: 0.5,
+      borderColor: theme.colors.glassStroke,
+    };
+
+    switch (variant) {
+      case 'square':
+        return {
+          ...baseStyle,
+          width: 60,
+          height: 60,
+          borderRadius: theme.borderRadius.md,
+          transform: [{ rotate: '15deg' }],
+        };
+      case 'blob':
+        return {
+          ...baseStyle,
+          width: 80,
+          height: 60,
+          borderRadius: theme.borderRadius.xl,
+          transform: [{ rotate: '-10deg' }],
+        };
+      default:
+        return {
+          ...baseStyle,
+          width: 50,
+          height: 50,
+          borderRadius: theme.borderRadius.full,
+        };
+    }
+  };
 
   return (
-    <CardWrapper {...animationProps} style={[styles.container, style]}>
-      <View style={styles.shadowLayer} />
-      <BlurView intensity={80} tint="default" style={styles.blurView}>
-        <View style={styles.glassEffect}>
-          <View style={styles.contentContainer}>{children}</View>
-        </View>
-      </BlurView>
-    </CardWrapper>
+    <MotiView
+      style={getShapeStyle()}
+      from={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: 0.3, scale: 1 }}
+      transition={{
+        type: 'timing',
+        duration: 1200,
+        delay: Math.random() * 1000,
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 28,
+    borderRadius: 24,
     overflow: 'hidden',
+    shadowColor: '#5A3A36',
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
   },
-  shadowLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 16,
-    backgroundColor: 'transparent',
+  blur: {
+    flex: 1,
   },
-  blurView: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+  gradient: {
+    flex: 1,
   },
-  glassEffect: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 28,
-  },
-  contentContainer: {
-    padding: 32,
+  content: {
+    padding: 24,
   },
 });
