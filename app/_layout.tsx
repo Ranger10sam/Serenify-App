@@ -4,6 +4,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useEffect, useState, useRef } from 'react';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold } from '@expo-google-fonts/montserrat';
 import { View, Text, TouchableOpacity, Modal, Animated } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { createTheme, ThemeMode } from '../src/theme';
@@ -128,6 +129,7 @@ export default function RootLayout() {
 		<SafeAreaProvider>
 			<SafeAreaView style={{ flex: 1 }}>
 				<RootLayoutContent />
+				<Toast />
 			</SafeAreaView>
 		</SafeAreaProvider>
 	);

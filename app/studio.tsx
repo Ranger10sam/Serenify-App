@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Dimensions, Alert, ScrollView, Modal } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MotiView } from 'moti';
@@ -60,6 +61,16 @@ export default function StudioScreen() {
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
   const [loading, setLoading] = useState(isEditing);
   const [showExportModal, setShowExportModal] = useState(false);
+  
+  // Dropdown states
+  const [expandedSections, setExpandedSections] = useState({
+    content: false,
+    format: false,
+    typography: false,
+    layout: false,
+    style: false,
+    colors: false,
+  });
 
   const viewShotRef = useRef<ViewShot>(null);
 
@@ -142,6 +153,13 @@ export default function StudioScreen() {
     setTextPosition(prev => ({ ...prev, y: newY }));
   };
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   const generateRandomQuote = () => {
     const randomQuote = getRandomQuote();
     setQuote(randomQuote.text);
@@ -171,22 +189,35 @@ export default function StudioScreen() {
         aspectRatio: aspectRatio.value,
       };
 
-      if (isEditing) {
+            if (isEditing) {
         await updateWallpaper(editId, wallpaperData);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Success', 'Wallpaper updated successfully!', [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
-              } else {
+        Toast.show({
+          type: 'success',
+          text1: 'Updated Successfully!',
+          text2: 'Your wallpaper has been updated',
+          visibilityTime: 2000,
+        });
+        setTimeout(() => router.back(), 1000);
+      } else {
         await saveWallpaper(wallpaperData);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('Success', 'Wallpaper saved successfully!', [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
+        Toast.show({
+          type: 'success',
+          text1: 'Saved Successfully!',
+          text2: 'Your wallpaper has been saved',
+          visibilityTime: 2000,
+        });
+        setTimeout(() => router.back(), 1000);
       }
     } catch (error) {
       console.error('Error saving wallpaper:', error);
-      Alert.alert('Error', 'Failed to save wallpaper. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to save wallpaper. Please try again.',
+        visibilityTime: 3000,
+      });
     }
   };
 
@@ -197,6 +228,12 @@ export default function StudioScreen() {
       const uri = await viewShotRef.current.capture();
       await Sharing.shareAsync(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show({
+        type: 'success',
+        text1: 'Exported Successfully!',
+        text2: 'Your wallpaper is ready to share',
+        visibilityTime: 2000,
+      });
       setShowExportModal(false);
     } catch (error) {
       console.error('Error exporting wallpaper:', error);
@@ -485,175 +522,283 @@ export default function StudioScreen() {
                 <View style={{ 
                   backgroundColor: theme.colors.background,
                   borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
+                  marginBottom: 12,
+                  overflow: 'hidden',
                 }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontFamily: 'Montserrat_600SemiBold',
-                    color: theme.colors.text,
-                    marginBottom: 12,
-                  }}>
-                    Content
-                  </Text>
-                  
-                  <TextInput
-                    value={quote}
-                    onChangeText={setQuote}
-                    placeholder="Enter your quote..."
-                    multiline
+                  <TouchableOpacity
+                    onPress={() => toggleSection('content')}
                     style={{
-                      backgroundColor: theme.colors.surface,
-                      borderRadius: 8,
-                      padding: 12,
-                      fontSize: 14,
-                      fontFamily: 'Montserrat_400Regular',
-                      color: theme.colors.text,
-                      minHeight: 60,
-                      textAlignVertical: 'top',
-                      marginBottom: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: 16,
                     }}
-                  />
+                  >
+                    <Text style={{
+                      fontSize: 14,
+                      fontFamily: 'Montserrat_600SemiBold',
+                      color: theme.colors.text,
+                    }}>
+                      Content
+                    </Text>
+                    <Ionicons 
+                      name={expandedSections.content ? "chevron-up" : "chevron-down"} 
+                      size={16} 
+                      color={theme.colors.textMuted} 
+                    />
+                  </TouchableOpacity>
                   
-                  <TextInput
-                    value={author}
-                    onChangeText={setAuthor}
-                    placeholder="Author (optional)"
-                    style={{
-                      backgroundColor: theme.colors.surface,
-                      borderRadius: 8,
-                      padding: 12,
-                      fontSize: 14,
-                      fontFamily: 'Montserrat_400Regular',
-                      color: theme.colors.text,
-                    }}
-                  />
+                  {expandedSections.content && (
+                    <MotiView
+                      from={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ type: 'timing', duration: 200 }}
+                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
+                    >
+                      <TextInput
+                        value={quote}
+                        onChangeText={setQuote}
+                        placeholder="Enter your quote..."
+                        multiline
+                        style={{
+                          backgroundColor: theme.colors.surface,
+                          borderRadius: 8,
+                          padding: 12,
+                          fontSize: 14,
+                          fontFamily: 'Montserrat_400Regular',
+                          color: theme.colors.text,
+                          minHeight: 60,
+                          textAlignVertical: 'top',
+                          marginBottom: 12,
+                        }}
+                      />
+                      
+                      <TextInput
+                        value={author}
+                        onChangeText={setAuthor}
+                        placeholder="Author (optional)"
+                        style={{
+                          backgroundColor: theme.colors.surface,
+                          borderRadius: 8,
+                          padding: 12,
+                          fontSize: 14,
+                          fontFamily: 'Montserrat_400Regular',
+                          color: theme.colors.text,
+                        }}
+                      />
+                    </MotiView>
+                  )}
                 </View>
 
                 {/* Format Section */}
                 <View style={{ 
                   backgroundColor: theme.colors.background,
                   borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
+                  marginBottom: 12,
+                  overflow: 'hidden',
                 }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontFamily: 'Montserrat_600SemiBold',
-                    color: theme.colors.text,
-                    marginBottom: 12,
-                  }}>
-                    Format
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => toggleSection('format')}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: 16,
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 14,
+                      fontFamily: 'Montserrat_600SemiBold',
+                      color: theme.colors.text,
+                    }}>
+                      Format
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={{
+                        fontSize: 12,
+                        fontFamily: 'Montserrat_400Regular',
+                        color: theme.colors.textMuted,
+                      }}>
+                        {aspectRatio.name}
+                      </Text>
+                      <Ionicons 
+                        name={expandedSections.format ? "chevron-up" : "chevron-down"} 
+                        size={16} 
+                        color={theme.colors.textMuted} 
+                      />
+                    </View>
+                  </TouchableOpacity>
                   
-                  <View style={{ gap: 8 }}>
-                    {aspectRatios.map((ratio) => (
-                      <TouchableOpacity
-                        key={ratio.value}
-                        onPress={() => setAspectRatio(ratio)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingVertical: 12,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          backgroundColor: aspectRatio.value === ratio.value ? theme.colors.accent : theme.colors.surface,
-                        }}
-                      >
-                        <Text style={{
-                          fontSize: 13,
-                          fontFamily: 'Montserrat_500Medium',
-                          color: aspectRatio.value === ratio.value ? 'white' : theme.colors.text,
-                        }}>
-                          {ratio.name}
-                        </Text>
-                        <Text style={{
-                          fontSize: 11,
-                          fontFamily: 'Montserrat_400Regular',
-                          color: aspectRatio.value === ratio.value ? 'rgba(255,255,255,0.8)' : theme.colors.textMuted,
-                        }}>
-                          {ratio.value}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  {expandedSections.format && (
+                    <MotiView
+                      from={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ type: 'timing', duration: 200 }}
+                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
+                    >
+                      <View style={{ gap: 8 }}>
+                        {aspectRatios.map((ratio) => (
+                          <TouchableOpacity
+                            key={ratio.value}
+                            onPress={() => setAspectRatio(ratio)}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingVertical: 12,
+                              paddingHorizontal: 12,
+                              borderRadius: 8,
+                              backgroundColor: aspectRatio.value === ratio.value ? theme.colors.accent : theme.colors.surface,
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 13,
+                              fontFamily: 'Montserrat_500Medium',
+                              color: aspectRatio.value === ratio.value ? 'white' : theme.colors.text,
+                            }}>
+                              {ratio.name}
+                            </Text>
+                            <Text style={{
+                              fontSize: 11,
+                              fontFamily: 'Montserrat_400Regular',
+                              color: aspectRatio.value === ratio.value ? 'rgba(255,255,255,0.8)' : theme.colors.textMuted,
+                            }}>
+                              {ratio.value}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </MotiView>
+                  )}
                 </View>
 
                 {/* Typography Section */}
                 <View style={{ 
                   backgroundColor: theme.colors.background,
                   borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
+                  marginBottom: 12,
+                  overflow: 'hidden',
                 }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontFamily: 'Montserrat_600SemiBold',
-                    color: theme.colors.text,
-                    marginBottom: 12,
-                  }}>
-                    Typography
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => toggleSection('typography')}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: 16,
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 14,
+                      fontFamily: 'Montserrat_600SemiBold',
+                      color: theme.colors.text,
+                    }}>
+                      Typography
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={{
+                        fontSize: 12,
+                        fontFamily: 'Montserrat_400Regular',
+                        color: theme.colors.textMuted,
+                      }}>
+                        Size {fontSize}
+                      </Text>
+                      <Ionicons 
+                        name={expandedSections.typography ? "chevron-up" : "chevron-down"} 
+                        size={16} 
+                        color={theme.colors.textMuted} 
+                      />
+                    </View>
+                  </TouchableOpacity>
                   
-                  <View style={{ gap: 8 }}>
-                    {/* Font Size Options */}
-                    {[16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
-                      <TouchableOpacity
-                        key={size}
-                        onPress={() => setFontSize(size)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingVertical: 10,
-                          paddingHorizontal: 12,
-                          borderRadius: 8,
-                          backgroundColor: fontSize === size ? theme.colors.accent : theme.colors.surface,
-                        }}
-                      >
-                        <Text style={{
-                          fontSize: 13,
-                          fontFamily: 'Montserrat_500Medium',
-                          color: fontSize === size ? 'white' : theme.colors.text,
-                        }}>
-                          Size {size}
-                        </Text>
-                        <Text style={{
-                          fontSize: size > 20 ? 16 : size,
-                          fontFamily: 'Montserrat_400Regular',
-                          color: fontSize === size ? 'white' : theme.colors.textMuted,
-                        }}>
-                          Aa
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  {expandedSections.typography && (
+                    <MotiView
+                      from={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ type: 'timing', duration: 200 }}
+                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
+                    >
+                      <View style={{ gap: 8 }}>
+                        {/* Font Size Options */}
+                        {[16, 18, 20, 22, 24, 26, 28, 30, 32].map((size) => (
+                          <TouchableOpacity
+                            key={size}
+                            onPress={() => setFontSize(size)}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              borderRadius: 8,
+                              backgroundColor: fontSize === size ? theme.colors.accent : theme.colors.surface,
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 13,
+                              fontFamily: 'Montserrat_500Medium',
+                              color: fontSize === size ? 'white' : theme.colors.text,
+                            }}>
+                              Size {size}
+                            </Text>
+                            <Text style={{
+                              fontSize: size > 20 ? 16 : size,
+                              fontFamily: 'Montserrat_400Regular',
+                              color: fontSize === size ? 'white' : theme.colors.textMuted,
+                            }}>
+                              Aa
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </MotiView>
+                  )}
                 </View>
 
                 {/* Layout Section */}
                 <View style={{ 
                   backgroundColor: theme.colors.background,
                   borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
+                  marginBottom: 12,
+                  overflow: 'hidden',
                 }}>
-                  <Text style={{
-                    fontSize: 14,
-                    fontFamily: 'Montserrat_600SemiBold',
-                    color: theme.colors.text,
-                    marginBottom: 12,
-                  }}>
-                    Layout
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => toggleSection('layout')}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: 16,
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 14,
+                      fontFamily: 'Montserrat_600SemiBold',
+                      color: theme.colors.text,
+                    }}>
+                      Layout
+                    </Text>
+                    <Ionicons 
+                      name={expandedSections.layout ? "chevron-up" : "chevron-down"} 
+                      size={16} 
+                      color={theme.colors.textMuted} 
+                    />
+                  </TouchableOpacity>
                   
-                  <View style={{ gap: 8 }}>
-                    {/* Text Width Options */}
-                    {[
-                      { label: 'Narrow', value: 0.6 },
-                      { label: 'Medium', value: 0.8 },
-                      { label: 'Wide', value: 1.0 },
-                    ].map((option) => (
+                  {expandedSections.layout && (
+                    <MotiView
+                      from={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      transition={{ type: 'timing', duration: 200 }}
+                      style={{ paddingHorizontal: 16, paddingBottom: 16 }}
+                    >
+                      <View style={{ gap: 8 }}>
+                        {/* Text Width Options */}
+                        {[
+                          { label: 'Narrow', value: 0.6 },
+                          { label: 'Medium', value: 0.8 },
+                          { label: 'Wide', value: 1.0 },
+                        ].map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         onPress={() => setTextWidth(option.value)}
@@ -716,7 +861,9 @@ export default function StudioScreen() {
                         </Text>
                       </TouchableOpacity>
                     ))}
-                  </View>
+                      </View>
+                    </MotiView>
+                  )}
                 </View>
 
                 {/* Style Section */}

@@ -79,37 +79,49 @@ const WallpaperGridItem: React.FC<WallpaperGridItemProps> = ({ wallpaper, theme,
           elevation: 3,
         }}
       >
-        {/* Quote Preview */}
-        <Text
-          style={{
-            fontSize: Math.min(wallpaper.fontSize * 0.6, height > 250 ? 16 : 14),
-            fontFamily: wallpaper.fontFamily,
-            color: wallpaper.textColor,
-            textAlign: 'center',
-            lineHeight: Math.min(wallpaper.fontSize * 0.6, height > 250 ? 16 : 14) * 1.2,
-          }}
-          numberOfLines={height > 250 ? 8 : 6}
-          ellipsizeMode="tail"
-        >
-          "{wallpaper.quote}"
-        </Text>
-
-        {/* Author */}
-        {wallpaper.author && (
+        {/* Quote Preview with Position */}
+        <View style={{
+          position: 'absolute',
+          left: wallpaper.textPosition ? `${wallpaper.textPosition.x * 100}%` : '50%',
+          top: wallpaper.textPosition ? `${wallpaper.textPosition.y * 100}%` : '50%',
+          transform: [
+            { translateX: -(width * (wallpaper.textWidth || 0.8)) / 2 },
+            { translateY: -30 }
+          ],
+          width: width * (wallpaper.textWidth || 0.8),
+          alignItems: 'center',
+        }}>
           <Text
             style={{
-              fontSize: Math.min(wallpaper.fontSize * 0.45, height > 250 ? 12 : 10),
-              fontFamily: 'Montserrat_400Regular',
+              fontSize: Math.min(wallpaper.fontSize * 0.6, height > 250 ? 16 : 14),
+              fontFamily: wallpaper.fontFamily,
               color: wallpaper.textColor,
-              opacity: 0.8,
               textAlign: 'center',
-              marginTop: height > 200 ? 8 : 4,
+              lineHeight: Math.min(wallpaper.fontSize * 0.6, height > 250 ? 16 : 14) * 1.2,
             }}
-            numberOfLines={1}
+            numberOfLines={height > 250 ? 8 : 6}
+            ellipsizeMode="tail"
           >
-            — {wallpaper.author}
+            "{wallpaper.quote}"
           </Text>
-        )}
+          
+          {/* Author */}
+          {wallpaper.author && (
+            <Text
+              style={{
+                fontSize: Math.min(wallpaper.fontSize * 0.45, height > 250 ? 12 : 10),
+                fontFamily: 'Montserrat_400Regular',
+                color: wallpaper.textColor,
+                opacity: 0.8,
+                textAlign: 'center',
+                marginTop: height > 200 ? 8 : 4,
+              }}
+              numberOfLines={1}
+            >
+              — {wallpaper.author}
+            </Text>
+          )}
+        </View>
 
         {/* Edit Indicator */}
         <View
